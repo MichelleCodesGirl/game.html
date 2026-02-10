@@ -1,25 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SPACE TYCOON: PLANETARY EXPANSION</title>
+    <title>SPACE TYCOON: BOTANICAL FRONTIER</title>
     <style>
-        :root { --neon: #00f2ff; --money: #00ff88; --glass: rgba(5, 12, 20, 0.98); }
+        :root { --neon: #00f2ff; --money: #00ff88; --nature: #a2ff00; --glass: rgba(5, 12, 20, 0.98); }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; color: white; }
         
         #hud { 
             position: absolute; top: 30px; left: 30px; 
             padding: 25px; background: var(--glass); 
-            border: 1px solid var(--neon); border-left: 6px solid var(--neon);
+            border: 1px solid var(--nature); border-left: 6px solid var(--nature);
         }
         #money-val { font-size: 36px; font-weight: 900; color: var(--money); }
-        
-        #stats { margin-top: 10px; font-size: 11px; color: var(--neon); letter-spacing: 1px; }
+        #stats { margin-top: 10px; font-size: 11px; color: var(--nature); letter-spacing: 1px; }
 
         .label {
             position: absolute; text-align: center; pointer-events: none;
-            color: var(--neon); font-size: 11px; font-weight: 900;
-            background: rgba(0,0,0,0.9); padding: 8px 12px; border: 1px solid var(--neon);
-            transform: translate(-50%, -100%);
+            color: var(--nature); font-size: 11px; font-weight: 900;
+            background: rgba(0,0,0,0.9); padding: 8px 12px; border: 1px solid var(--nature);
+            transform: translate(-50%, -100%); border-radius: 10px;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
@@ -27,9 +26,9 @@
 <body>
 
     <div id="hud">
-        <div style="font-size: 9px; opacity: 0.5; letter-spacing: 3px;">COLONY FUNDS</div>
-        <span id="money-val">§ 2,500</span>
-        <div id="stats">INCOME: §0/SEC | WORKERS: 0</div>
+        <div style="font-size: 9px; opacity: 0.5; letter-spacing: 3px;">COLONY ECO-FUNDS</div>
+        <span id="money-val">§ 5,000</span>
+        <div id="stats">ECO-OUTPUT: §0/SEC | GARDENS: 0</div>
     </div>
 
     <div id="labels"></div>
@@ -46,7 +45,7 @@
         scene.background = new THREE.Color(0x010205);
         
         const aspect = window.innerWidth / window.innerHeight;
-        const d = 45;
+        const d = 50;
         const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 2000);
         camera.position.set(100, 100, 100);
         camera.lookAt(0, 0, 0);
@@ -56,12 +55,12 @@
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0x4060ff, 0.3));
+        scene.add(new THREE.AmbientLight(0x40ff80, 0.2)); // Green-tinted ambient
         const sun = new THREE.DirectionalLight(0xffffff, 2.5);
         sun.position.set(50, 150, 50);
         scene.add(sun);
 
-        // --- PLAYER (YOUR CUSTOM AVATAR) ---
+        // --- PLAYER (PINK/BLONDE VOYAGER) ---
         const player = new THREE.Group();
         const pBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1), new THREE.MeshStandardMaterial({color: 0xffffff}));
         pBody.position.y = 1;
@@ -72,52 +71,42 @@
         player.add(pBody, pHair, pStreak);
         scene.add(player);
 
-        // --- TYCOON DATA ---
-        let money = 2500, income = 0, workers = 0;
-        const keys = {}, pads = [], scraps = [], npcs = [];
+        // --- GAME DATA ---
+        let money = 5000, income = 0, gardens = 0;
+        const keys = {}, pads = [], scraps = [];
 
-        // Realistic Road/Bridge Creator
-        function createRoad(start, end) {
-            const distance = start.distanceTo(end);
-            const roadGeo = new THREE.BoxGeometry(6, 0.5, distance);
-            const roadMat = new THREE.MeshStandardMaterial({color: 0x111111});
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            
-            road.position.copy(start.clone().add(end).multiplyScalar(0.5));
-            road.lookAt(end);
-            scene.add(road);
-
-            // Add Neon Railings
-            const railGeo = new THREE.BoxGeometry(0.2, 0.8, distance);
-            const railMat = new THREE.MeshBasicMaterial({color: 0x00f2ff});
-            const L = new THREE.Mesh(railGeo, railMat);
-            const R = new THREE.Mesh(railGeo, railMat);
-            L.position.set(-3.1, 0.5, 0); R.position.set(3.1, 0.5, 0);
-            road.add(L, R);
+        // Helper: Create a Realistic Tree
+        function createTree(x, z, scale = 1) {
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2*scale, 0.4*scale, 4*scale), new THREE.MeshStandardMaterial({color: 0x3d2b1f}));
+            const leaves = new THREE.Mesh(new THREE.DodecahedronGeometry(2*scale), new THREE.MeshStandardMaterial({color: 0x228b22, roughness: 1}));
+            leaves.position.y = 3*scale;
+            tree.add(trunk, leaves);
+            tree.position.set(x, 2*scale, z);
+            scene.add(tree);
         }
 
-        // Sector Creator
-        function createSector(x, z, size) {
-            const floor = new THREE.Mesh(
-                new THREE.BoxGeometry(size, 2, size),
-                new THREE.MeshStandardMaterial({color: 0x1a1c22, roughness: 0.8})
-            );
+        // Helper: Create a Green Sector
+        function createGreenSector(x, z, size) {
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(size, 2, size), new THREE.MeshStandardMaterial({color: 0x1a1c22}));
             floor.position.set(x, -1, z);
             scene.add(floor);
-            const grid = new THREE.GridHelper(size, size/5, 0x00f2ff, 0x050505);
-            grid.position.set(x, 0.01, z);
-            scene.add(grid);
-            return new THREE.Vector3(x, 0, z);
-        }
+            
+            const grass = new THREE.Mesh(new THREE.BoxGeometry(size-2, 0.2, size-2), new THREE.MeshStandardMaterial({color: 0x34a853}));
+            grass.position.set(x, 0.1, z);
+            scene.add(grass);
 
-        const centerPos = createSector(0, 0, 40);
+            const border = new THREE.Mesh(new THREE.BoxGeometry(size+1, 1, size+1), new THREE.MeshStandardMaterial({color: 0x333333}));
+            border.position.set(x, -0.4, z);
+            scene.add(border);
+        }
 
         function createPad(x, z, cost, name, onBuy) {
             const group = new THREE.Group();
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 0.1, 16, 64), new THREE.MeshBasicMaterial({color: 0x00f2ff}));
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 0.2, 16, 64), new THREE.MeshBasicMaterial({color: 0xa2ff00}));
             ring.rotation.x = -Math.PI/2;
             group.add(ring);
-            group.position.set(x, 0.1, z);
+            group.position.set(x, 0.2, z);
             const div = document.createElement('div');
             div.className = 'label';
             div.innerHTML = `${name}<br>§${cost.toLocaleString()}`;
@@ -127,49 +116,36 @@
             pads.push(group);
         }
 
-        // --- EXPANSION FLOW ---
-        createPad(15, 0, 1000, "COMMAND CENTER", () => {
-            income += 150;
-            const b = new THREE.Group();
-            const base = new THREE.Mesh(new THREE.BoxGeometry(10, 8, 10), new THREE.MeshStandardMaterial({color: 0x333333}));
-            const dish = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 8, 0, 6, 0, 1.5), new THREE.MeshStandardMaterial({color: 0xaaaaaa}));
-            dish.position.y = 5;
-            b.add(base, dish);
-            b.position.set(15, 4, -10);
-            scene.add(b);
+        // --- INITIAL SETUP ---
+        createGreenSector(0, 0, 40);
+        createTree(5, 5); createTree(-8, 10);
 
-            createPad(-15, 0, 5000, "EXPAND: EAST SECTOR", () => {
-                const eastPos = createSector(60, 0, 30);
-                createRoad(new THREE.Vector3(20, 0, 0), new THREE.Vector3(45, 0, 0));
-                
-                createPad(60, 0, 10000, "SOLAR FARM", () => {
-                    income += 1000;
-                    for(let i=0; i<4; i++) {
-                        const panel = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 5), new THREE.MeshStandardMaterial({color: 0x0044ff, emissive: 0x001144}));
-                        panel.position.set(60 + (i%2?5:-5), 2, (i<2?5:-5));
-                        panel.rotation.x = 0.5;
-                        scene.add(panel);
-                    }
-                    // Spawn NPCs
-                    for(let i=0; i<5; i++) {
-                        const npc = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.6), new THREE.MeshStandardMaterial({color: 0x00aaff}));
-                        npc.position.set(60, 0.5, 0);
-                        scene.add(npc);
-                        npcs.push({mesh: npc, dir: Math.random()*6, origin: new THREE.Vector3(60,0,0)});
-                        workers++;
-                    }
+        // --- EXPANSION NODES ---
+        createPad(15, 0, 2000, "BOTANICAL CENTER", () => {
+            income += 250;
+            const glass = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 12, 0, Math.PI*2, 0, Math.PI/2), 
+                new THREE.MeshStandardMaterial({color: 0xa2ff00, transparent: true, opacity: 0.2}));
+            glass.position.set(15, 0, -15);
+            scene.add(glass);
+            createTree(15, -15, 1.5);
+            gardens++;
+
+            createPad(-60, 0, 10000, "EXPAND: THE ARBORETUM", () => {
+                createGreenSector(-60, 0, 50);
+                // Bridge
+                const bridge = new THREE.Mesh(new THREE.BoxGeometry(40, 0.5, 8), new THREE.MeshStandardMaterial({color: 0x222222}));
+                bridge.position.set(-30, 0, 0);
+                scene.add(bridge);
+
+                createPad(-60, 0, 25000, "THE ANCIENT OAK", () => {
+                    income += 2000;
+                    createTree(-60, 0, 4); // Huge tree
+                    gardens += 5;
                 });
             });
         });
 
-        // Scrap system for active play
-        setInterval(() => {
-            const s = new THREE.Mesh(new THREE.IcosahedronGeometry(1), new THREE.MeshStandardMaterial({color: 0xffcc00}));
-            s.position.set((Math.random()-0.5)*100, 1, (Math.random()-0.5)*100);
-            scene.add(s);
-            scraps.push(s);
-        }, 5000);
-
+        // Loop
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
 
@@ -181,20 +157,9 @@
             if(keys['KeyA']) { player.position.x -= speed; player.position.z += speed; player.rotation.y = Math.PI * 1.25; }
             if(keys['KeyD']) { player.position.x += speed; player.position.z -= speed; player.rotation.y = Math.PI * 0.25; }
 
-            scraps.forEach((s, i) => {
-                s.rotation.y += 0.05;
-                if(player.position.distanceTo(s.position) < 3) { money += 500; scene.remove(s); scraps.splice(i, 1); }
-            });
-
-            npcs.forEach(n => {
-                n.mesh.position.x += Math.cos(n.dir) * 0.05;
-                n.mesh.position.z += Math.sin(n.dir) * 0.05;
-                if(n.mesh.position.distanceTo(n.origin) > 12) n.dir += Math.PI;
-            });
-
             money += income/60;
             document.getElementById('money-val').innerText = "§ " + Math.floor(money).toLocaleString();
-            document.getElementById('stats').innerText = `INCOME: §${income}/SEC | WORKERS: ${workers}`;
+            document.getElementById('stats').innerText = `ECO-OUTPUT: §${income}/SEC | GARDENS: ${gardens}`;
 
             pads.forEach(p => {
                 if(!p.userData.active) return;
